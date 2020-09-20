@@ -1,4 +1,5 @@
 from kaggle_environments import make as make_environment
+from kaggle_environments.envs.halite.helpers import *
 from pathlib import Path
 from recordtype import recordtype
 from tensorflow.keras.utils import plot_model
@@ -9,6 +10,9 @@ import numpy as np
 import os
 import time
 import utils
+from Logic.image_render_v4 import image_render_v4
+
+image_render = image_render_v4(21)
 
 ExperienceStep = recordtype('ExperienceStep', [
   'game_id',
@@ -229,6 +233,13 @@ def set_ignored_actions_to_None(
   
   return int_actions
 
+
+def get_board(env):
+  obs = env.state[0].observation
+  config = env.configuration
+  actions = [agent.action for agent in env.state]
+  return Board(obs, config, actions)
+
 def collect_experience_single_game(this_agent, other_agents, num_agents,
                                    agent_config, action_costs, verbose,
                                    game_id):
@@ -248,6 +259,7 @@ def collect_experience_single_game(this_agent, other_agents, num_agents,
   
   # Take actions until the game is terminated
   while not env.done:
+    image_render.render_board(get_board(env))
     env_observation = env.state[0].observation
     player_current_observations = []
     player_current_obs = []
@@ -282,7 +294,7 @@ def collect_experience_single_game(this_agent, other_agents, num_agents,
         player_valid_actions.append(valid_actions)
         
       else:
-        if agent_status != 'INVALID':
+        if agent_status != 'INVALID' and agent_status != 'DONE':
           raise ValueError("Unexpected agent state: {}".format(agent_status))
         player_mapped_actions.append({})
       
